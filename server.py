@@ -9,7 +9,4 @@ conn, addr = s.accept()
 
 while True:
     data = conn.recv(1024)
-
     print(data.decode('utf-8'))
-
-# TODO smoothly exit the program
