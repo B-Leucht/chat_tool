@@ -19,7 +19,9 @@ if __name__ == "__main__":
     s.connect(("localhost", 54321))
     # send name to server
     s.sendall(name.encode("utf-8"))
+    # create a thread, that receives incoming messages 
     r_thread = threading.Thread(target=receive)
     r_thread.start()
+    # get user input and send it to the server
     for line in sys.stdin:
         s.sendall(line.encode("utf-8"))
