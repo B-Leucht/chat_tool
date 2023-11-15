@@ -20,18 +20,22 @@ def handle_client(c_socket):
         try:
             data = c_socket.recv(1024).decode("utf-8")
         except ConnectionResetError:
-            return
-        # concatenate name with data
-        message = name + ": " + data
-        print(message)
-        # duplicate the clients_sockets set, so it can be changed while iterating over it
-        c_sockets = set(client_sockets)
-        # broadcast message to all clients
-        for sock in c_sockets:
-            try:
-                sock.sendall(message.encode("utf-8"))
-            except BrokenPipeError:
-                client_sockets.remove(sock)
+            print("User " + name + " disconnected")
+            break
+        if data != "": # make sure the message isn't an empty string
+            # concatenate name with data
+            message = name + ": " + data
+            print(message)
+            # duplicate the clients_sockets set, so it can be changed while iterating over it
+            c_sockets = set(client_sockets)
+            # broadcast message to all clients
+            for sock in c_sockets:
+                try:
+                    # send message to client
+                    sock.sendall(message.encode("utf-8"))
+                except BrokenPipeError:
+                    # remove socket from set if it can't be reached
+                    client_sockets.remove(sock)
 
 
 if __name__ == "__main__":
