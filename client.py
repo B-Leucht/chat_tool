@@ -1,37 +1,70 @@
 import socket
-import sys
 import threading
-from GUI import GUI  # Assuming GUI is defined in the GUI module
+from GUI import GUI
 
 class ChatClient:
+    """
+    A simple chat client that connects to a server and provides a GUI for user interaction.
+
+    Attributes:
+        s (socket.socket): The socket object for communication with the server.
+        server_address (tuple): A tuple containing the server's address (host, port).
+        name (str): The user's name.
+        gui (GUI): An instance of the GUI class for user interface.
+
+    Methods:
+        receive(): Handles incoming messages from the server.
+        send(data): Sends user input to the server.
+        connect_to_server(): Connects the socket to the server and sends the user's name.
+        close(): Closes the socket.
+        run_client(): Runs the chat client, initializing the GUI, connecting to the server, and starts a thread for receiving messages.
+    """
+
     def __init__(self, server_address, port):
+        # Initialize the chat client
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_address = (server_address, port)
         self.name = ""
-        self.gui = GUI(self)
+        self.gui = None
 
     def receive(self):
         """Handles incoming messages"""
         while True:
-            data = self.s.recv(1024).decode("utf-8")
+            try:
+                # Receive incoming messages from the server
+                data = self.s.recv(1024).decode("utf-8")
+            except OSError:
+                # Break the loop if an error occurs (e.g., socket closed)
+                break
             print(data)
             if self.gui:
+                # Add the received message to the GUI
                 self.gui.add_message(data)
 
     def send(self, data):
-        """Ask user for their name and make sure it's not an empty string"""
+        """Send user input to the server"""
         self.s.sendall(data.encode("utf-8"))
 
     def connect_to_server(self):
         """Connect the socket to the server and send the user's name"""
+        # Get the user's name from the GUI
         self.name = self.gui.name
+        # Connect to the server
         self.s.connect(self.server_address)
+        # Send the user's name to the server (limited to 1024 bytes)
         self.s.sendall(self.name.encode("utf-8")[:1024])
+
+    def close(self):
+        """Close socket"""
+        self.s.close()
+        print("Socket geschlossen")
 
     def run_client(self):
         """Run the chat client"""
+        # Initialize the GUI
+        self.gui = GUI(self)
+        # Connect to the server
         self.connect_to_server()
-
         # Create a thread that receives incoming messages
         r_thread = threading.Thread(target=self.receive)
         r_thread.start()
