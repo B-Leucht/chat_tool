@@ -3,10 +3,10 @@ import sys
 
 
 class GUI:
-    def __init__(self, socket=None):
+    def __init__(self, client=None):
         # Initialize Pygame
         pygame.init()
-        self.socket = socket
+        self.client = client
         # Constants
         self.WIDTH, self.HEIGHT = 800, 600
         self.WHITE = (255, 255, 255)
@@ -36,6 +36,43 @@ class GUI:
 
         # Clock to control the frame rate
         self.clock = pygame.time.Clock()
+        #variables for the pop-up window
+        self.popup_active = True
+        self.popup_text = ""
+        self.popup_input_box = pygame.Rect(self.WIDTH // 4, self.HEIGHT // 4, self.WIDTH // 2, 32)
+        self.popup_color = pygame.Color("lightskyblue3")
+        self.name = self.get_user_name()
+
+    def show_name_popup(self):
+        while self.popup_active:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        self.popup_active = False
+                    elif event.key == pygame.K_BACKSPACE:
+                        self.popup_text = self.popup_text[:-1]
+                    else:
+                        self.popup_text += event.unicode
+
+            self.screen.fill(self.WHITE)
+
+            # Draw the pop-up window
+            pygame.draw.rect(self.screen, self.popup_color, self.popup_input_box, 2)
+            popup_text_surface = self.font.render(self.popup_text, True, self.BLACK)
+            self.screen.blit(
+                popup_text_surface,
+                (self.popup_input_box.x + 5, self.popup_input_box.y + 5)
+            )
+
+            pygame.display.flip()
+            self.clock.tick(30)
+
+    def get_user_name(self):
+        self.show_name_popup()
+        return self.popup_text
 
     def add_message(self, message):
         self.chat_log.append(message)
@@ -59,10 +96,10 @@ class GUI:
                     if self.active:
                         if event.key == pygame.K_RETURN:
                             # Process the entered text (for simplicity, just print it)
-                            if self.socket is None:
+                            if self.client is None:
                                 self.chat_log.append(self.text)
                             else:
-                                self.socket.sendall(self.text.encode("utf-8"))
+                                self.client.send(self.text)
                             self.text = ""
                         elif event.key == pygame.K_BACKSPACE:
                             self.text = self.text[:-1]
