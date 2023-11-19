@@ -23,10 +23,14 @@ def handle_client(c_socket):
             message = "User " + name + " disconnected"
             broadcast(message)
             break
-        if data != "": # make sure the message isn't an empty stri
-            # concatenate name with data
-            message = name + ": " + data
-            broadcast(message)
+        match data[0]: 
+            case "t":# concatenate name with data
+                message = name + ": " + data[1:]
+                broadcast(message)
+            case "c":
+                message = "User " + name + " disconnected"
+                client_sockets.remove(c_socket)
+                broadcast(message)
 
 def broadcast(message):
     print(message)

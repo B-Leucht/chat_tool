@@ -2,6 +2,7 @@ import socket
 import threading
 from GUI import GUI
 
+
 class ChatClient:
     """
     A simple chat client that connects to a server and provides a GUI for user interaction.
@@ -17,7 +18,8 @@ class ChatClient:
         send(data): Sends user input to the server.
         connect_to_server(): Connects the socket to the server and sends the user's name.
         close(): Closes the socket.
-        run_client(): Runs the chat client, initializing the GUI, connecting to the server, and starts a thread for receiving messages.
+        run_client(): Runs the chat client, initializing the GUI, 
+        connecting to the server, and starting a thread for receiving messages.
     """
 
     def __init__(self, server_address, port):
@@ -41,9 +43,11 @@ class ChatClient:
                 # Add the received message to the GUI
                 self.gui.add_message(data)
 
-    def send(self, data):
+    def send_text(self, data):
         """Send user input to the server"""
-        self.s.sendall(data.encode("utf-8"))
+        #t as firs char in string tells the server that it's a text_message
+        message = "t"+data
+        self.s.sendall(message.encode("utf-8"))
 
     def connect_to_server(self):
         """Connect the socket to the server and send the user's name"""
@@ -55,9 +59,10 @@ class ChatClient:
         self.s.sendall(self.name.encode("utf-8")[:1024])
 
     def close(self):
-        """Close socket"""
+        #c as first char tells the server that the client disconnected
+        message = "closed" 
+        self.s.sendall(message.encode("utf-8"))
         self.s.close()
-        print("Socket geschlossen")
 
     def run_client(self):
         """Run the chat client"""
@@ -68,9 +73,10 @@ class ChatClient:
         # Create a thread that receives incoming messages
         r_thread = threading.Thread(target=self.receive)
         r_thread.start()
-        
+
         # Start the GUI
         self.gui.run()
+
 
 if __name__ == "__main__":
     # Create a ChatClient instance and run the client
