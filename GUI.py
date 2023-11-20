@@ -82,6 +82,10 @@ class GUI:
             # Draw the pop-up window border
             pygame.draw.rect(self.screen, self.color_active, self.popup_input_box, 2)
 
+            # Render the "Username:" text on the pop-up window
+            username_text = self.font.render("Username:", True, self.BLACK)
+            self.screen.blit(username_text, (self.popup_input_box.x + 5, self.popup_input_box.y - 30))
+
             # Render the entered text on the pop-up window
             popup_text_surface = self.font.render(self.popup_text, True, self.BLACK)
             self.screen.blit(
@@ -125,7 +129,8 @@ class GUI:
             if event.type == pygame.QUIT:
                 # Quit Pygame, close the client connection (if available), and exit the program
                 pygame.quit()
-                self.client.close()
+                if self.client:
+                    self.client.close()
                 sys.exit()
 
             # Check if the event is a mouse button down event
@@ -184,12 +189,13 @@ class GUI:
         """
         Handle the Enter/Return key press event.
         """
-        if self.client is None:
-            self.chat_log.append(self.text)
-        else:
-            self.client.send(self.text)
-        self.text = ""
-        self.update_text_surface()
+        if self.text != "":
+            if self.client is None:
+                self.chat_log.append(self.text)
+            else:
+                self.client.send_text(self.text)
+            self.text = ""
+            self.update_text_surface()
 
     def handle_backspace_key(self):
         """
@@ -206,14 +212,16 @@ class GUI:
         - event (pygame.event.Event): The Pygame event object.
         """
         self.text += event.unicode
-        self.width = max(200, self.font.size(self.text)[0] + 10)
         self.update_text_surface()
 
     def update_text_surface(self):
         """
         Update the text surface used for rendering the input box text.
         """
-        self.text_surface = self.font.render(self.text, True, self.color)
+        lines = self.wrap_text(self.text, self.chat_area.width - 10)
+        last_line = lines[-1]
+        self.width = max(200, self.font.size(last_line)[0] + 10)
+        self.text_surface = self.font.render(last_line, True, self.color)
 
     def draw_ui(self):
         """
@@ -278,11 +286,11 @@ class GUI:
 
             # Get the width and height of the test line using the Pygame font
             width, _ = self.font.size(test_line)
-
+            # If the current line itself exceeds the max_width, add it to wrapped_lines
             # Check if the test line fits within the specified width
             if width <= max_width:
                 # Update the current line with the test line if it fits
-                current_line = test_line
+                    current_line = test_line
             else:
                 # Add the current line to the list of wrapped lines
                 wrapped_lines.append(current_line)
