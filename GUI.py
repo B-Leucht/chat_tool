@@ -28,7 +28,7 @@ class GUI:
 
         # Initialize fonts and input box properties
         self.font = pygame.font.SysFont("Courier", self.FONT_SIZE)
-        self.input_box = pygame.Rect(50, self.HEIGHT - 50, self.WIDTH - 100, 32)
+        self.input_box = pygame.Rect(50, self.HEIGHT - 65, self.WIDTH - 100, 32)
         self.color_inactive = pygame.Color("lightskyblue3")
         self.color_active = pygame.Color("dodgerblue2")
         self.color = self.color_inactive
@@ -93,7 +93,7 @@ class GUI:
 
             # Render the entered text on the pop-up window
             if popup_text:
-                popup_text_surface = self.font.render(popup_text, True, self.BLACK)
+                popup_text_surface = self.font.render(popup_text, True, self.color_active)
                 self.screen.blit(
                     popup_text_surface,
                  (popup_input_box.x + 5, popup_input_box.y + 5),
@@ -123,7 +123,6 @@ class GUI:
         - message (str): The message to be added.
         """
         wrapped_message = "\n".join(self.wrap_text([message],self.chat_area.width - 20))
-        print(wrapped_message)
         self.chat_log.append(wrapped_message)
         # Calculate the new total height of the chat log
         self.total_chat_height = int(sum(
@@ -167,6 +166,7 @@ class GUI:
         else:
             self.input_active = False
         self.color = self.color_active if self.input_active else self.color_inactive
+        self.update_text_surface()
 
     def handle_key_press(self, event):
         """
@@ -184,12 +184,12 @@ class GUI:
                 self.handle_left_arrow()
             elif event.key == pygame.K_RIGHT:
                 self.handle_right_arrow()
-            elif event.key == pygame.K_UP:
-                self.handle_up_arrow()
-            elif event.key == pygame.K_DOWN:
-                self.handle_down_arrow()
             else:
                 self.handle_typing(event)
+        if event.key == pygame.K_UP:
+            self.handle_up_arrow()
+        elif event.key == pygame.K_DOWN:
+            self.handle_down_arrow()
                 
     
     def handle_return_key(self):
@@ -216,6 +216,7 @@ class GUI:
             # Move the cursor position to the left
             self.cursor_position -= 1
             # Update the text surface to reflect the changes
+            self.handle_line_changes()
             self.update_text_surface()
         
     def handle_up_arrow(self):
@@ -225,7 +226,8 @@ class GUI:
         if self.input_active:
             if self.current_line_idx > 0:
                 self.current_line_idx -=1
-                self.cursor_position = min(len(self.text[self.current_line_idx]), self.cursor_position)
+                self.current_line = self.text[self.current_line_idx]
+                self.cursor_position = min(len(self.current_line), self.cursor_position)
                 self.update_text_surface()
         else:
             # Scroll up if the total height exceeds the visible chat area
@@ -243,7 +245,8 @@ class GUI:
         if self.input_active:
             if self.current_line_idx < len(self.text) - 1:
                 self.current_line_idx += 1
-                self.cursor_position = min(len(self.text[self.current_line_idx]), self.cursor_position)
+                self.current_line = self.text[self.current_line_idx]
+                self.cursor_position = min(len(self.current_line), self.cursor_position)
                 self.update_text_surface()
         else:
             # Scroll down if the scroll offset is greater than zero
@@ -259,6 +262,7 @@ class GUI:
             self.cursor_position -= 1
 
         # Update the text surface to reflect the new scroll offset and cursor position
+        self.handle_line_changes()
         self.update_text_surface()
 
     def handle_right_arrow(self):
@@ -269,6 +273,7 @@ class GUI:
         self.cursor_position += 1
 
         # Update the text surface to reflect the new scroll offset and cursor position
+        self.handle_line_changes()
         self.update_text_surface()
 
     def handle_typing(self, event):
@@ -284,26 +289,20 @@ class GUI:
             # Move the cursor position to the right
             self.cursor_position += 1
             # Update the text surface to reflect the changes
+            self.handle_line_changes()
             self.update_text_surface()
 
-
-    def update_text_surface(self):
-        """
-        Update the text surface used for rendering the input box text.
-        """
-        # Store the length of the text before any modifications
+    def handle_line_changes(self):
         old_len = len(self.text)
-    
+
         # Wrap the text to fit within the chat area width
         self.text = self.wrap_text(self.text, self.chat_area.width - 20)
-        print(self.text)
         # Check if the cursor position is at the end of the current line
         if self.cursor_position >= len(self.current_line):
             # Move to the beginning of the next line if available
             if self.current_line_idx < len(self.text)-1:
                 self.current_line_idx += 1
                 self.current_line = self.text[self.current_line_idx]
-
                 # Adjust the cursor position 
                 if old_len < len(self.text):
                     self.cursor_position = len(self.current_line)
@@ -325,6 +324,11 @@ class GUI:
         # Cursor position is within the current line
         else:
             self.current_line = self.text[self.current_line_idx]
+
+    def update_text_surface(self):
+        """
+        Update the text surface used for rendering the input box text.
+        """
 
         # Render the updated line as a Pygame surface
         self.text_surface = self.font.render(self.current_line, True, self.color)
@@ -355,10 +359,29 @@ class GUI:
         Draw the user interface, including the chat area, input box, and cursor line.
         """
         self.screen.fill(self.WHITE)
+    
         # Draw chat area and chat log
         pygame.draw.rect(self.screen, self.BLACK, self.chat_area)
         self.display_chat_log()
-        
+    
+        # Draw previous line (if available)
+        if self.current_line_idx > 0:
+            prev_line = self.text[self.current_line_idx - 1]
+            prev_line_surface = self.font.render(prev_line, True, self.color_inactive)
+            self.screen.blit(
+                prev_line_surface,
+                (self.input_box.x + 5, self.input_box.y - self.FONT_SIZE - 5),
+            )
+    
+        # Draw next line (if available)
+        if self.current_line_idx < len(self.text) - 1:
+            next_line = self.text[self.current_line_idx + 1]
+            next_line_surface = self.font.render(next_line, True, self.color_inactive)
+            self.screen.blit(
+                next_line_surface,
+                (self.input_box.x + 5, self.input_box.y + self.input_box.height + 5),
+            )
+
         # Draw input box and input text
         pygame.draw.rect(self.screen, self.color, self.input_box, 2)
         self.screen.blit(
@@ -368,6 +391,7 @@ class GUI:
         # Draw the cursor line if the input box is active
         if self.input_active:
             self.draw_cursor_line()
+
 
     def display_chat_log(self):
         """
@@ -402,7 +426,7 @@ class GUI:
         """wrap text into a certain max_width
 
         Args:
-            text (str): text to be wrapped
+            text (list): text to be wrapped
             max_width (int): width it should be wrapped to
 
         Returns:
@@ -410,32 +434,29 @@ class GUI:
         """
         lines = []
         words = " ".join(text).split(" ")
-        current_line = []
+        current_line = ""
  
         for word in words:
             # Check if adding the current word exceeds the maximum width
-            if self.font.size(" ".join(current_line + [word]))[0] <= max_width:
-                current_line.append(word)
+            if self.font.size(current_line + " " + word)[0] <= max_width-20:
+                current_line += " " + word if current_line != "" else word
             else:
                 # Check if the current word itself is longer than the maximum width
                 if self.font.size(word)[0] > max_width:
-                    if current_line != []:
-                        lines.append(" ".join(current_line))
+                    if current_line != "":
+                        lines.append(current_line)
                     # Split the long word into segments that fit the maximum width
                     i=0
                     while self.font.size(word[:i])[0]<max_width:
                         i += 1
                     lines.append(word[:i])
-                    if i < len(word):
-                        current_line = [word[i:]]
-                    else:
-                        current_line = []
+                    current_line = ""
                 else:
-                    lines.append(" ".join(current_line))
-                    current_line = [word]
+                    if current_line != "":
+                        lines.append(current_line)
+                    current_line = word
 
-        if current_line:
-            lines.append(" ".join(current_line))
+        lines.append(current_line)
         return lines
 
     def run(self):
