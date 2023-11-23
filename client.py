@@ -41,7 +41,12 @@ class ChatClient:
             print(data)
             if self.gui:
                 # Add the received message to the GUI
-                self.gui.add_message(data)
+                match data[0]:
+                    case "t":
+                        print("Hallo")
+                        self.gui.add_message(data[1:])
+                    case "n":
+                        self.gui.set_online_users(data[1:].split(" "))
 
     def send_text(self, data):
         """Send user input to the server"""
@@ -52,7 +57,7 @@ class ChatClient:
     def connect_to_server(self):
         """Connect the socket to the server and send the user's name"""
         # Get the user's name from the GUI
-        self.name = self.gui.name
+        self.name = self.gui.get_user_name()
         # Connect to the server
         self.s.connect(self.server_address)
         # Send the user's name to the server (limited to 1024 bytes)

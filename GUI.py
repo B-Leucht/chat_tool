@@ -34,6 +34,7 @@ class GUI:
         self.color = self.color_inactive
         self.input_active = False
         self.text = [""]
+        self.online_users = []
         self.current_line_idx = 0
         self.current_line = ""
         self.text_surface = self.font.render(self.text[self.current_line_idx], True, self.color)
@@ -77,7 +78,7 @@ class GUI:
                         popup_text = popup_text[:-1]
                     else:
                         # Add the typed character to the entered text
-                        if self.font.size(popup_text)[0] < popup_input_box.width-20:
+                        if self.font.size(popup_text)[0] < popup_input_box.width-20 and event.key != pygame.K_SPACE:
                             popup_text += event.unicode
             # Fill the screen with the background color
             self.screen.fill(self.WHITE)
@@ -359,7 +360,8 @@ class GUI:
         Draw the user interface, including the chat area, input box, and cursor line.
         """
         self.screen.fill(self.WHITE)
-    
+
+        self.display_online_users()
         # Draw chat area and chat log
         pygame.draw.rect(self.screen, self.BLACK, self.chat_area)
         self.display_chat_log()
@@ -421,7 +423,30 @@ class GUI:
                 y_offset -= self.FONT_SIZE + 5
 
             y_offset -= 10
+            
+    def set_online_users(self, online_users):
+        self.online_users = online_users
+        
+    def display_online_users(self):
+        """
+        Display the list of online users on the screen.
 
+        Parameters:
+        - online_users (list): A list of online user names.
+        """
+        users = "Online Users: " + ", ".join(self.online_users)
+        users = self.wrap_text([users], self.chat_area.width - 20)
+        y_offset = 5
+        if len(users) > 2:
+            users = users[:2]
+            users[1] = users[1]+"..."
+        for line in users:
+            user_list_surface = self.font.render(
+                line, True, self.BLACK
+            )
+            self.screen.blit(user_list_surface, (self.input_box.x + 5, y_offset))
+            y_offset += self.FONT_SIZE + 5
+        
     def wrap_text(self, text, max_width):
         """wrap text into a certain max_width
 
@@ -473,4 +498,5 @@ class GUI:
 if __name__ == "__main__":
     gui = GUI()
     gui.get_user_name()
+    gui.set_online_users(["Benny", "David"])
     gui.run()
