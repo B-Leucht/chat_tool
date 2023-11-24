@@ -45,23 +45,25 @@ class ChatClient:
                     case "t":
                         print("Hallo")
                         self.gui.add_message(data[1:])
-                    case "n":
+                    case "c":
                         self.gui.set_online_users(data[1:].split(" "))
 
     def send_text(self, data):
         """Send user input to the server"""
-        #t as firs char in string tells the server that it's a text_message
+        #t as first char in string tells the server that it's a text message
         message = "t"+data
         self.s.sendall(message.encode("utf-8"))
 
+    def send_name(self, name):
+        self.s.sendall(name.encode("utf-8"))
+        return self.s.recv(1024).decode("utf-8")
+        
     def connect_to_server(self):
         """Connect the socket to the server and send the user's name"""
-        # Get the user's name from the GUI
-        self.name = self.gui.get_user_name()
         # Connect to the server
         self.s.connect(self.server_address)
-        # Send the user's name to the server (limited to 1024 bytes)
-        self.s.sendall(self.name.encode("utf-8")[:1024])
+        # Get the user's name from the GUI
+        self.name = self.gui.get_user_name()
 
     def close(self):
         #c as first char tells the server that the client disconnected

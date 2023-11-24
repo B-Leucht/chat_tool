@@ -6,15 +6,22 @@ clients = dict()
 
 def handle_client(c_socket):
     """handles a client's interaction with the server"""
-    try:
-        # receive name from the client
-        name = c_socket.recv(1024).decode("utf-8")
-    except ConnectionResetError:
-        return
+    name = ""
+    while True:
+        try:
+            # receive name from the client
+            name = c_socket.recv(1024).decode("utf-8")
+            if name in clients:
+                c_socket.sendall("name_taken".encode("utf-8"))
+            else:
+                c_socket.sendall("name_valid".encode("utf-8"))
+                break
+        except ConnectionResetError:
+            return
 
     # add the socket to the dictionary of all sockets
     clients[name] = c_socket
-    users = "n" + " ".join(clients.keys())
+    users = "c" + " ".join(clients.keys())
     broadcast(users)
 
     while True:
@@ -39,7 +46,7 @@ def handle_client(c_socket):
 
 def remove_client(name):
     clients.pop(name)
-    users = "n" + " ".join(clients.keys())
+    users = "c" + " ".join(clients.keys())
     broadcast(users)
 
 def broadcast(message):

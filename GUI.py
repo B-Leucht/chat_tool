@@ -20,6 +20,7 @@ class GUI:
         self.WIDTH, self.HEIGHT = 800, 600
         self.WHITE = (255, 255, 255)
         self.BLACK = (0, 0, 0)
+        self.RED = (255,0,0)
         self.FONT_SIZE = 20
 
         # Initialize Pygame window
@@ -55,9 +56,12 @@ class GUI:
         popup_text = ""
         popup_input_box = pygame.Rect(
             self.WIDTH // 4, self.HEIGHT // 4, self.WIDTH // 2, 32
-        )
+        )  
+        feedback_message = ""
+        retry_count = 3  # Number of retry attempts
+
         # Continue the loop while the popup window is active
-        while popup_active:
+        while popup_active and retry_count > 0:
             # Iterate through all Pygame events
             for event in pygame.event.get():
                 # Check if the event is a window close event
@@ -70,8 +74,15 @@ class GUI:
                 if event.type == pygame.KEYDOWN:
                     # Check if the Enter/Return key is pressed
                     if event.key == pygame.K_RETURN:
-                        # Disable the popup window
-                        popup_active = False
+                        if self.client:
+                            response = self.client.send_name(popup_text)
+                            if response == "name_taken":
+                                feedback_message = "Name already taken. Please choose another name."
+                            else:
+                                # Disable the popup window
+                                popup_active = False
+                        else:
+                            popup_active = False
                     # Check if the Backspace key is pressed
                     elif event.key == pygame.K_BACKSPACE:
                         # Remove the last character from the entered text
@@ -80,6 +91,7 @@ class GUI:
                         # Add the typed character to the entered text
                         if self.font.size(popup_text)[0] < popup_input_box.width-20 and event.key != pygame.K_SPACE:
                             popup_text += event.unicode
+
             # Fill the screen with the background color
             self.screen.fill(self.WHITE)
 
@@ -97,7 +109,17 @@ class GUI:
                 popup_text_surface = self.font.render(popup_text, True, self.color_active)
                 self.screen.blit(
                     popup_text_surface,
-                 (popup_input_box.x + 5, popup_input_box.y + 5),
+                    (popup_input_box.x + 5, popup_input_box.y + 5),
+                )
+
+            # Render the feedback message on the screen
+            if feedback_message:
+                feedback_message_surface = self.font.render(feedback_message, True, self.RED)
+                feedback_message_rect = feedback_message_surface.get_rect()
+                feedback_message_rect.center = (self.WIDTH//2, self.HEIGHT//2)
+                self.screen.blit(
+                    feedback_message_surface,
+                    feedback_message_rect.topleft,
                 )
 
             # Update the display
@@ -105,7 +127,9 @@ class GUI:
 
             # Control the frame rate
             self.clock.tick(30)
+
         return popup_text
+
 
     def get_user_name(self):
         """
