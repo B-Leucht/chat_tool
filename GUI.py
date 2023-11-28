@@ -46,86 +46,92 @@ class GUI:
         self.cursor_position = 0
         # Initialize clock for controlling the frame rate
         self.clock = pygame.time.Clock()
-        
+       
+
+    def handle_popup_events(self, popup_text, popup_active, max_width, feedback_message):
+        """Handle Pygame events for the pop-up window.
+
+        Args:
+            popup_text (str): The current text entered in the pop-up window.
+            popup_active (bool): Flag indicating whether the pop-up window is active.
+            max_width (int): Max width of input box
+
+        Returns:
+            tuple: Updated values for popup_text and popup_active based on the events.
+        """
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    if self.client:
+                        response = self.client.send_name(popup_text)
+                        if response == "name_taken":
+                            feedback_message = "Name already taken. Please choose another name."
+                        else:
+                            popup_active = False
+                    else:
+                        popup_active = False
+                elif event.key == pygame.K_BACKSPACE:
+                    popup_text = popup_text[:-1]
+                else:
+                    if self.font.size(popup_text)[0] < max_width and event.key != pygame.K_SPACE:
+                        popup_text += event.unicode
+        print()
+        return popup_text, popup_active, feedback_message
+
+    def render_popup(self, popup_input_box, popup_text):
+        """
+        Render the pop-up window on the screen.
+
+        Args:
+            popup_input_box (pygame.Rect): The rectangle representing the pop-up window.
+            popup_text (str): The text entered in the pop-up window.
+        """
+        self.screen.fill(self.WHITE)
+        pygame.draw.rect(self.screen, self.color_active, popup_input_box, 2)
+
+        username_text = self.font.render("Username:", True, self.BLACK)
+        self.screen.blit(username_text, (popup_input_box.x + 5, popup_input_box.y - 30))
+
+        if popup_text:
+            popup_text_surface = self.font.render(popup_text, True, self.color_active)
+            self.screen.blit(popup_text_surface, (popup_input_box.x + 5, popup_input_box.y + 5))
+
+    def render_feedback_message(self, feedback_message):
+        """
+        Render the feedback message on the screen.
+
+        Args:
+            feedback_message (str): The feedback message to be displayed.
+        """
+        if feedback_message:
+            feedback_message_surface = self.font.render(feedback_message, True, self.RED)
+            feedback_message_rect = feedback_message_surface.get_rect()
+            feedback_message_rect.center = (self.WIDTH // 2, self.HEIGHT // 2)
+            self.screen.blit(feedback_message_surface, feedback_message_rect.topleft)
 
     def show_name_popup(self):
         """
         Display a pop-up window to get the user's name.
+
+        Returns:
+            str: The user's entered name.
         """
         popup_active = True
         popup_text = ""
-        popup_input_box = pygame.Rect(
-            self.WIDTH // 4, self.HEIGHT // 4, self.WIDTH // 2, 32
-        )  
         feedback_message = ""
+        popup_input_box = pygame.Rect(self.WIDTH // 4, self.HEIGHT // 4, self.WIDTH // 2, 32)
         retry_count = 3  # Number of retry attempts
 
-        # Continue the loop while the popup window is active
         while popup_active and retry_count > 0:
-            # Iterate through all Pygame events
-            for event in pygame.event.get():
-                # Check if the event is a window close event
-                if event.type == pygame.QUIT:
-                    # Quit Pygame and exit the program
-                    pygame.quit()
-                    sys.exit()
+            popup_text, popup_active, feedback_message = self.handle_popup_events(popup_text, popup_active, popup_input_box.width - 20, feedback_message)
+            self.render_popup(popup_input_box, popup_text)
+            self.render_feedback_message(feedback_message)
 
-                # Check if the event is a key down event
-                if event.type == pygame.KEYDOWN:
-                    # Check if the Enter/Return key is pressed
-                    if event.key == pygame.K_RETURN:
-                        if self.client:
-                            response = self.client.send_name(popup_text)
-                            if response == "name_taken":
-                                feedback_message = "Name already taken. Please choose another name."
-                            else:
-                                # Disable the popup window
-                                popup_active = False
-                        else:
-                            popup_active = False
-                    # Check if the Backspace key is pressed
-                    elif event.key == pygame.K_BACKSPACE:
-                        # Remove the last character from the entered text
-                        popup_text = popup_text[:-1]
-                    else:
-                        # Add the typed character to the entered text
-                        if self.font.size(popup_text)[0] < popup_input_box.width-20 and event.key != pygame.K_SPACE:
-                            popup_text += event.unicode
-
-            # Fill the screen with the background color
-            self.screen.fill(self.WHITE)
-
-            # Draw the pop-up window border
-            pygame.draw.rect(self.screen, self.color_active, popup_input_box, 2)
-
-            # Render the "Username:" text on the pop-up window
-            username_text = self.font.render("Username:", True, self.BLACK)
-            self.screen.blit(
-                username_text, (popup_input_box.x + 5, popup_input_box.y - 30)
-            )
-
-            # Render the entered text on the pop-up window
-            if popup_text:
-                popup_text_surface = self.font.render(popup_text, True, self.color_active)
-                self.screen.blit(
-                    popup_text_surface,
-                    (popup_input_box.x + 5, popup_input_box.y + 5),
-                )
-
-            # Render the feedback message on the screen
-            if feedback_message:
-                feedback_message_surface = self.font.render(feedback_message, True, self.RED)
-                feedback_message_rect = feedback_message_surface.get_rect()
-                feedback_message_rect.center = (self.WIDTH//2, self.HEIGHT//2)
-                self.screen.blit(
-                    feedback_message_surface,
-                    feedback_message_rect.topleft,
-                )
-
-            # Update the display
             pygame.display.flip()
-
-            # Control the frame rate
             self.clock.tick(30)
 
         return popup_text
@@ -207,14 +213,19 @@ class GUI:
                 self.handle_backspace_key()
             elif event.key == pygame.K_LEFT:
                 self.handle_left_arrow()
+            elif event.key == pygame.K_UP:
+                self.line_up()
+            elif event.key == pygame.K_DOWN:
+                self.line_down()
             elif event.key == pygame.K_RIGHT:
                 self.handle_right_arrow()
             else:
                 self.handle_typing(event)
-        if event.key == pygame.K_UP:
-            self.handle_up_arrow()
-        elif event.key == pygame.K_DOWN:
-            self.handle_down_arrow()
+        else:
+            if event.key == pygame.K_UP:
+                self.scroll_up()
+            elif event.key == pygame.K_DOWN:
+                self.scroll_down()
                 
     
     def handle_return_key(self):
@@ -244,39 +255,34 @@ class GUI:
             self.handle_line_changes()
             self.update_text_surface()
         
-    def handle_up_arrow(self):
-        """
-        Handle the Up arrow key press event.
-        """
-        if self.input_active:
-            if self.current_line_idx > 0:
-                self.current_line_idx -=1
-                self.current_line = self.text[self.current_line_idx]
-                self.cursor_position = min(len(self.current_line), self.cursor_position)
-                self.update_text_surface()
-        else:
-            # Scroll up if the total height exceeds the visible chat area
-            if (
+        
+    def line_up(self):
+
+        if self.current_line_idx > 0:
+            self.current_line_idx -=1
+            self.current_line = self.text[self.current_line_idx]
+            self.cursor_position = min(len(self.current_line), self.cursor_position)
+            self.update_text_surface()
+
+    def scroll_up(self):
+        if (
                 self.total_chat_height > self.chat_area.height + 5
                 and self.total_chat_height - self.scroll_offset
                 > self.chat_area.height
             ):
                 self.scroll_offset += 20
     
-    def handle_down_arrow(self):
-        """
-        Handle the Down arrow key press event.
-        """
-        if self.input_active:
-            if self.current_line_idx < len(self.text) - 1:
-                self.current_line_idx += 1
-                self.current_line = self.text[self.current_line_idx]
-                self.cursor_position = min(len(self.current_line), self.cursor_position)
-                self.update_text_surface()
-        else:
-            # Scroll down if the scroll offset is greater than zero
-            if self.scroll_offset > 0:
-                self.scroll_offset -= 20
+    def line_down(self):
+        if self.current_line_idx < len(self.text) - 1:
+            self.current_line_idx += 1
+            self.current_line = self.text[self.current_line_idx]
+            self.cursor_position = min(len(self.current_line), self.cursor_position)
+            self.update_text_surface()
+            
+    def scroll_down(self):
+        # Scroll down if the scroll offset is greater than zero
+        if self.scroll_offset > 0:
+            self.scroll_offset -= 20
 
     def handle_left_arrow(self):
         """
@@ -338,14 +344,13 @@ class GUI:
                 self.current_line = self.text[self.current_line_idx]
                 self.cursor_position = len(self.current_line)
         # Check if the cursor position is at the beginning of the text or has moved to a different line
-        elif self.cursor_position <= 0 or old_len > len(self.text):
-            if self.current_line_idx > 0:
-                # Move to the end of the previous line if available
-                self.current_line_idx -= 1
-                self.current_line = self.text[self.current_line_idx]
+        elif (self.cursor_position <= 0 or old_len > len(self.text)) and self.current_line_idx > 0:
+            # Move to the end of the previous line if available
+            self.current_line_idx -= 1
+            self.current_line = self.text[self.current_line_idx]
 
-                # Adjust the cursor position to the end of the new line
-                self.cursor_position = len(self.current_line)
+            # Adjust the cursor position to the end of the new line
+            self.cursor_position = len(self.current_line)
         # Cursor position is within the current line
         else:
             self.current_line = self.text[self.current_line_idx]
@@ -356,7 +361,7 @@ class GUI:
         """
 
         # Render the updated line as a Pygame surface
-        self.text_surface = self.font.render(self.current_line, True, self.color)
+        self.text_surface = self.font.render(self.text[self.current_line_idx], True, self.color)
 
 
     def draw_cursor_line(self):
