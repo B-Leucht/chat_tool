@@ -43,7 +43,6 @@ class ChatClient:
                 # Add the received message to the GUI
                 match data[0]:
                     case "t":
-                        print("Hallo")
                         self.gui.add_message(data[1:])
                     case "c":
                         self.gui.set_online_users(data[1:].split(" "))

@@ -79,7 +79,7 @@ class GUI:
                 else:
                     if self.font.size(popup_text)[0] < max_width and event.key != pygame.K_SPACE:
                         popup_text += event.unicode
-        print()
+                        
         return popup_text, popup_active, feedback_message
 
     def render_popup(self, popup_input_box, popup_text):
@@ -124,9 +124,8 @@ class GUI:
         popup_text = ""
         feedback_message = ""
         popup_input_box = pygame.Rect(self.WIDTH // 4, self.HEIGHT // 4, self.WIDTH // 2, 32)
-        retry_count = 3  # Number of retry attempts
 
-        while popup_active and retry_count > 0:
+        while popup_active:
             popup_text, popup_active, feedback_message = self.handle_popup_events(popup_text, popup_active, popup_input_box.width - 20, feedback_message)
             self.render_popup(popup_input_box, popup_text)
             self.render_feedback_message(feedback_message)
@@ -359,7 +358,6 @@ class GUI:
         """
         Update the text surface used for rendering the input box text.
         """
-
         # Render the updated line as a Pygame surface
         self.text_surface = self.font.render(self.text[self.current_line_idx], True, self.color)
 
